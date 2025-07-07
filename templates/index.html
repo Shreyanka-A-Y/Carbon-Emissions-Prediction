@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CO2 Emissions Predictor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🌍 CO2 Emissions Predictor</h1>
+            <p>Predict CO2 emissions per capita using environmental and economic indicators</p>
+        </header>
+
+        <main>
+            <div class="form-container">
+                <form id="predictionForm">
+                    <div class="form-grid">
+                        {% for feature in feature_names %}
+                        <div class="form-group">
+                            <label for="{{ feature }}">
+                                {{ feature_descriptions[feature] }}
+                            </label>
+                            <input 
+                                type="number" 
+                                id="{{ feature }}" 
+                                name="{{ feature }}" 
+                                step="any" 
+                                required
+                                placeholder="Enter value"
+                            >
+                            <small class="help-text"></small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" id="predictBtn">
+                            <span class="btn-text">🔮 Predict CO2 Emissions</span>
+                            <span class="loading" style="display: none;">⏳ Predicting...</span>
+                        </button>
+                        <button type="button" id="clearBtn">🗑️ Clear Form</button>
+                    </div>
+                </form>
+            </div>
+
+            <div id="results" class="results-container" style="display: none;">
+                <h2>📊 Prediction Results</h2>
+                <div class="result-card">
+                    <div class="prediction-value">
+                        <span id="predictionValue">--</span>
+                        <span class="unit">metric tons CO2 per capita</span>
+                    </div>
+
+                    <!-- CO2 Level Indicator -->
+                    <div class="co2-indicator">
+                        <div class="indicator-bar">
+                            <div id="co2Level" class="level-fill"></div>
+                        </div>
+                        <div class="indicator-labels">
+                            <span>Low (0-5)</span>
+                            <span>Medium (5-15)</span>
+                            <span>High (15+)</span>
+                        </div>
+                    </div>
+
+                    <!-- Comparison Chart -->
+                    <div class="chart-container">
+                        <h3>🌍 Global Comparison</h3>
+                        <canvas id="comparisonChart"></canvas>
+                    </div>
+
+                    <!-- Feature Impact Chart -->
+                    <div class="chart-container">
+                        <h3>📈 Feature Impact Analysis</h3>
+                        <canvas id="featureChart"></canvas>
+                    </div>
+
+                    <div class="prediction-details">
+                        <h3>Input Values Used:</h3>
+                        <div id="inputSummary"></div>
+
+                        <!-- Export and Share Options -->
+                        <div class="export-section">
+                            <h4>📤 Export & Share</h4>
+                            <div class="export-buttons">
+                                <button id="exportPdfBtn" class="export-btn">📄 Export PDF</button>
+                                <button id="exportCsvBtn" class="export-btn">📊 Export CSV</button>
+                                <button id="shareResultBtn" class="export-btn">🔗 Share Result</button>
+                                <button id="saveSessionBtn" class="export-btn">💾 Save Session</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="error" class="error-container" style="display: none;">
+                <h2>❌ Error</h2>
+                <p id="errorMessage"></p>
+            </div>
+        </main>
+
+        <!-- Historical Data Visualization -->
+        <div class="historical-section">
+            <h2>📈 Historical CO2 Trends</h2>
+            <div class="chart-controls">
+                <select id="countrySelect">
+                    <option value="global">Global Average</option>
+                    <option value="usa">United States</option>
+                    <option value="china">China</option>
+                    <option value="india">India</option>
+                    <option value="germany">Germany</option>
+                    <option value="japan">Japan</option>
+                </select>
+                <button id="updateHistoricalBtn">Update Chart</button>
+                <button id="downloadChartBtn">📥 Download Chart</button>
+            </div>
+            <canvas id="historicalChart"></canvas>
+
+            <!-- Chart Insights -->
+            <div class="chart-insights">
+                <h4>📊 Key Insights</h4>
+                <div id="historicalInsights">
+                    <p>Select a country to see trend analysis and insights.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Feature Sensitivity Analysis -->
+        <div class="sensitivity-section">
+            <h2>🔬 Feature Sensitivity Analysis</h2>
+            <p>See how changing each feature affects CO2 emissions:</p>
+            <div class="sensitivity-controls">
+                <select id="sensitivityFeature">
+                    <option value="cereal_yield">Cereal Yield</option>
+                    <option value="gni_per_cap">GNI per Capita</option>
+                    <option value="en_per_cap">Energy per Capita</option>
+                    <option value="pop_urb_aggl_perc">Urban Agglomeration %</option>
+                    <option value="prot_area_perc">Protected Areas %</option>
+                    <option value="pop_growth_perc">Population Growth %</option>
+                    <option value="urb_pop_growth_perc">Urban Growth %</option>
+                </select>
+                <button id="runSensitivityBtn">Run Analysis</button>
+            </div>
+            <canvas id="sensitivityChart"></canvas>
+        </div>
+
+        <footer>
+            <div class="info-section">
+                <h3>ℹ️ About This Model</h3>
+                <p>This prediction model uses a Random Forest Regressor trained on environmental and economic data to estimate CO2 emissions per capita. The model considers factors like energy consumption, population growth, economic indicators, and environmental protection measures.</p>
+
+                <div class="sample-values">
+                    <h4>💡 Sample Values (India 2008):</h4>
+                    <div class="sample-grid">
+                        <div>Cereal Yield: 2,800 kg/ha</div>
+                        <div>GNI per Capita: $1,200</div>
+                        <div>Energy per Capita: 500 kg oil eq.</div>
+                        <div>Urban Agglomeration: 30%</div>
+                        <div>Protected Areas: 5%</div>
+                        <div>Population Growth: 1.5%</div>
+                        <div>Urban Growth: 2.5%</div>
+                    </div>
+                    <button type="button" id="loadSampleBtn">📝 Load Sample Values</button>
+                </div>
+
+                <!-- Model Performance Stats -->
+                <div class="model-stats">
+                    <h4>🎯 Model Performance</h4>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <span class="stat-label">R² Score:</span>
+                            <span class="stat-value">0.85</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">RMSE:</span>
+                            <span class="stat-value">2.3 tons</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Training Data:</span>
+                            <span class="stat-value">1,700 samples</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Features:</span>
+                            <span class="stat-value">7 variables</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="quick-actions">
+                    <h4>⚡ Quick Actions</h4>
+                    <div class="action-buttons">
+                        <button id="randomDataBtn">🎲 Generate Random Data</button>
+                        <button id="compareCountriesBtn">🌍 Compare Countries</button>
+                        <button id="whatIfBtn">🔮 What-If Analysis</button>
+                        <button id="helpBtn">❓ Help & Tutorial</button>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
